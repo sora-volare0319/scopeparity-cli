@@ -11090,7 +11090,7 @@ import { mkdir, stat as stat4, writeFile as writeFile2 } from "fs/promises";
 import path8 from "path";
 
 // ../core/src/catalog.ts
-var RULESET_VERSION = "2026.07.18";
+var RULESET_VERSION = "2026.07.18.2";
 var RULESET_REVIEWED_AT = "2026-07-18";
 var GOOGLE_SCOPE_CATALOG_URL = "https://developers.google.com/identity/protocols/oauth2/scopes";
 var GOOGLE_RESTRICTED_SCOPE_URL = "https://support.google.com/cloud/answer/13464325?hl=en";
@@ -11286,7 +11286,11 @@ import { readFile as readFile2 } from "fs/promises";
 import path5 from "path";
 var fullScopePattern = /https:\/\/(?:www\.googleapis\.com\/auth\/[A-Za-z0-9._/-]+|mail\.google\.com\/?)/gu;
 var identityLiteralPattern = /["'`](openid|email|profile)["'`]/gu;
-var oauthContextPattern = /(?:google|oauth|authori[sz]|scopes?)/iu;
+var oauthContextPattern = /\b(?:google|oauth2?|authorization|authorize|authorise|authorized|authorised|scope|scopes)\b/u;
+function hasOAuthContext(value) {
+  const tokenized = value.replace(/([a-z0-9])([A-Z])/gu, "$1 $2").replace(/[_-]+/gu, " ").toLowerCase();
+  return oauthContextPattern.test(tokenized);
+}
 function safeRelativePath(value) {
   return value.replace(/[\u0000-\u001f\u007f-\u009f]/gu, "\uFFFD");
 }
@@ -11304,7 +11308,7 @@ async function extractScopes(rootInput, files) {
         locationsByScope.set(scope2, locations);
       }
       const context = lines.slice(Math.max(0, lineIndex - 2), Math.min(lines.length, lineIndex + 3)).join(" ");
-      if (!oauthContextPattern.test(context)) continue;
+      if (!hasOAuthContext(context)) continue;
       for (const match of line2.matchAll(identityLiteralPattern)) {
         const scope2 = normalizeScope(match[1] ?? "");
         if (!scope2) continue;
@@ -26166,6 +26170,8 @@ function renderHtmlReport(result) {
 var UNVERIFIED_APPS_URL = "https://support.google.com/cloud/answer/7454865?hl=en";
 var VERIFICATION_REQUIREMENTS_URL = "https://support.google.com/cloud/answer/13464321?hl=en";
 var DATA_ACCESS_URL = "https://support.google.com/cloud/answer/15549135?hl=en";
+var APP_HOMEPAGE_URL = "https://support.google.com/cloud/answer/13807376?hl=en";
+var APP_PRIVACY_URL = "https://support.google.com/cloud/answer/13806988?hl=en";
 function finding(input) {
   return {
     ...input,
@@ -26180,6 +26186,11 @@ function coversHost(domainInput, hostInput) {
 }
 function hostFor(url2) {
   return new URL(url2).hostname.toLowerCase();
+}
+function canonicalUrl(url2) {
+  const parsed = new URL(url2);
+  parsed.hash = "";
+  return parsed.toString();
 }
 function locationEvidence(scope2, paths) {
   return paths.map((location) => `${scope2} \xB7 ${location.path}:${location.line}`);
@@ -26310,6 +26321,20 @@ function evaluateProject(input) {
     );
   }
   const privacyHost = hostFor(input.manifest.app.privacyPolicyUrl);
+  if (canonicalUrl(input.manifest.app.homepageUrl) === canonicalUrl(input.manifest.app.privacyPolicyUrl)) {
+    findings.push(
+      finding({
+        ruleId: "PRIVACY_URL_EQUALS_HOMEPAGE",
+        severity: "blocker",
+        category: "public-surface",
+        title: "The privacy-policy URL is the same as the homepage URL.",
+        message: "Google requires a dedicated privacy-policy URL that differs from the submitted homepage URL.",
+        remediation: "Publish a dedicated privacy page and record that exact URL in the launch manifest.",
+        evidence: [input.manifest.app.homepageUrl],
+        sourceUrl: APP_PRIVACY_URL
+      })
+    );
+  }
   const sharedAuthorizedDomain = authorizedDomains.some(
     (domain3) => coversHost(domain3, homepageHost) && coversHost(domain3, privacyHost)
   );
@@ -26432,6 +26457,22 @@ function evaluateProject(input) {
         })
       );
     } else {
+      const intendedHomepage = canonicalUrl(input.manifest.app.homepageUrl);
+      const fetchedHomepage = input.publicSurface?.homepageFinalUrl ? canonicalUrl(input.publicSurface.homepageFinalUrl) : intendedHomepage;
+      if (fetchedHomepage !== intendedHomepage) {
+        findings.push(
+          finding({
+            ruleId: "HOMEPAGE_REDIRECT_CHANGED_URL",
+            severity: "blocker",
+            category: "public-surface",
+            title: "The submitted homepage redirects to a different URL.",
+            message: "The bounded public check reached a final URL that differs from the homepage recorded in the manifest.",
+            remediation: "Use a static homepage URL that does not redirect, then align the consent-screen value.",
+            evidence: [intendedHomepage, fetchedHomepage],
+            sourceUrl: APP_HOMEPAGE_URL
+          })
+        );
+      }
       const normalizedHtml = homepageHtml.toLocaleLowerCase("en-US");
       const privacyUrl = input.manifest.app.privacyPolicyUrl;
       const privacyPath = new URL(privacyUrl).pathname;
@@ -26439,13 +26480,13 @@ function evaluateProject(input) {
         findings.push(
           finding({
             ruleId: "PRIVACY_LINK_NOT_FOUND_ON_HOMEPAGE",
-            severity: "blocker",
+            severity: "manual",
             category: "public-surface",
-            title: "The declared privacy-policy link was not found on the fetched homepage.",
-            message: "Neither the absolute privacy URL nor its path appears in the bounded HTML evidence.",
-            remediation: "Add the same privacy-policy link used in the intended consent-screen configuration.",
+            title: "The declared privacy-policy link was not found in fetched homepage HTML.",
+            message: "Neither the absolute privacy URL nor its path appears in the bounded, non-rendered HTML evidence.",
+            remediation: "Confirm the rendered page exposes the same privacy-policy link, or add it to the initial HTML.",
             evidence: [input.manifest.app.homepageUrl, privacyUrl],
-            sourceUrl: VERIFICATION_REQUIREMENTS_URL
+            sourceUrl: APP_HOMEPAGE_URL
           })
         );
       }
@@ -26453,13 +26494,13 @@ function evaluateProject(input) {
         findings.push(
           finding({
             ruleId: "APP_NAME_NOT_FOUND_ON_HOMEPAGE",
-            severity: "blocker",
+            severity: "manual",
             category: "public-surface",
-            title: "The declared app name was not found on the fetched homepage.",
-            message: "The exact app name does not appear in the bounded homepage HTML evidence.",
-            remediation: "Make the public homepage identify the app using the name intended for submission.",
+            title: "The declared app name was not found in fetched homepage HTML.",
+            message: "The exact app name does not appear in the bounded, non-rendered homepage HTML evidence.",
+            remediation: "Confirm the rendered page identifies the app using the submitted name, or add it to the initial HTML.",
             evidence: [input.manifest.app.name, input.manifest.app.homepageUrl],
-            sourceUrl: VERIFICATION_REQUIREMENTS_URL
+            sourceUrl: APP_HOMEPAGE_URL
           })
         );
       }
@@ -26635,7 +26676,7 @@ async function runScanCommand(rootInput, options) {
 }
 
 // src/cli.ts
-var VERSION = "0.1.1";
+var VERSION = "0.1.2";
 async function captureFailure(operation, io) {
   try {
     return await operation();

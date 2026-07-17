@@ -1,6 +1,6 @@
 {
   "name": "scopeparity",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Credential-free local CLI for ScopeParity",
   "type": "module",
   "license": "MIT",

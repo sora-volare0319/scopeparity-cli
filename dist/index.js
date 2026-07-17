@@ -10933,6 +10933,8 @@ var VERIFICATION_REQUIREMENTS = "https://support.google.com/cloud/answer/1346432
 var VIDEO_GUIDANCE = "https://support.google.com/cloud/answer/13804565?hl=en";
 var RESTRICTED_SCOPE_GUIDANCE = "https://support.google.com/cloud/answer/13464325?hl=en";
 var DATA_ACCESS_GUIDANCE = "https://support.google.com/cloud/answer/15549135?hl=en";
+var APP_HOMEPAGE_GUIDANCE = "https://support.google.com/cloud/answer/13807376?hl=en";
+var APP_PRIVACY_GUIDANCE = "https://support.google.com/cloud/answer/13806988?hl=en";
 var SCOPE_CATALOG = "https://developers.google.com/identity/protocols/oauth2/scopes";
 var explanations = [
   {
@@ -10978,18 +10980,32 @@ var explanations = [
     sourceUrl: VERIFICATION_REQUIREMENTS
   },
   {
-    code: "PRIVACY_LINK_NOT_FOUND_ON_HOMEPAGE",
+    code: "PRIVACY_URL_EQUALS_HOMEPAGE",
     group: "must fix",
-    summary: "The optional public-page check did not find the declared privacy-policy URL on the homepage.",
-    nextAction: "Add a visible privacy-policy link to the public homepage and scan again with URL checks enabled.",
-    sourceUrl: VERIFICATION_REQUIREMENTS
+    summary: "The manifest uses the same URL for the app homepage and privacy policy.",
+    nextAction: "Publish a dedicated privacy-policy page and record its distinct public URL in the launch manifest.",
+    sourceUrl: APP_PRIVACY_GUIDANCE
+  },
+  {
+    code: "HOMEPAGE_REDIRECT_CHANGED_URL",
+    group: "must fix",
+    summary: "The bounded public check reached a final URL different from the homepage recorded in the manifest.",
+    nextAction: "Use a stable public homepage URL that does not redirect, then align the launch manifest and consent-screen value.",
+    sourceUrl: APP_HOMEPAGE_GUIDANCE
+  },
+  {
+    code: "PRIVACY_LINK_NOT_FOUND_ON_HOMEPAGE",
+    group: "confirm manually",
+    summary: "The bounded public check did not find the declared privacy-policy URL in the fetched, non-rendered homepage HTML.",
+    nextAction: "Inspect the rendered signed-out page first; add the exact privacy link to initial HTML only if it is truly absent.",
+    sourceUrl: APP_HOMEPAGE_GUIDANCE
   },
   {
     code: "APP_NAME_NOT_FOUND_ON_HOMEPAGE",
-    group: "must fix",
-    summary: "The optional public-page check did not find the manifest app name on the homepage.",
-    nextAction: "Make the submitted app identity visible on the public homepage or correct the manifest app name.",
-    sourceUrl: VERIFICATION_REQUIREMENTS
+    group: "confirm manually",
+    summary: "The bounded public check did not find the manifest app name in the fetched, non-rendered homepage HTML.",
+    nextAction: "Inspect the rendered signed-out page first; align the visible identity or manifest only if they actually differ.",
+    sourceUrl: APP_HOMEPAGE_GUIDANCE
   },
   {
     code: "SCOPE_WITHOUT_FEATURE_EVIDENCE",
@@ -11025,6 +11041,13 @@ var explanations = [
     summary: "Domain ownership is not marked as confirmed, and ScopeParity will not request Search Console credentials to inspect it.",
     nextAction: "Confirm ownership with the Google account and role used for the intended submission.",
     sourceUrl: VERIFICATION_REQUIREMENTS
+  },
+  {
+    code: "PUBLIC_URL_CHECK_FAILED",
+    group: "confirm manually",
+    summary: "The bounded public check could not collect valid homepage evidence, so ScopeParity did not infer the page state.",
+    nextAction: "Review the recorded network failure, confirm the exact public URL manually, and retry only after the cause is understood.",
+    sourceUrl: APP_HOMEPAGE_GUIDANCE
   },
   {
     code: "PUBLIC_URL_CHECK_NOT_RUN",
@@ -26676,7 +26699,7 @@ async function runScanCommand(rootInput, options) {
 }
 
 // src/cli.ts
-var VERSION = "0.1.2";
+var VERSION = "0.1.3";
 async function captureFailure(operation, io) {
   try {
     return await operation();

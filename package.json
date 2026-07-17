@@ -1,0 +1,27 @@
+{
+  "name": "scopeparity",
+  "version": "0.1.0",
+  "description": "Credential-free local CLI for ScopeParity",
+  "type": "module",
+  "license": "MIT",
+  "sideEffects": false,
+  "bin": {
+    "scopeparity": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sora-volare0319/scopeparity.git"
+  },
+  "homepage": "https://scopeparity.vercel.app/",
+  "bugs": {
+    "url": "https://github.com/sora-volare0319/scopeparity/issues"
+  }
+}

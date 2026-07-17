@@ -26577,6 +26577,11 @@ function formatPrettyReport(result, _manifestPath) {
       ""
     ] : [],
     result.summary.blockers === 0 ? "No objective inconsistencies were found. Manual checks may still remain; this is not an approval guarantee." : `${result.summary.blockers} objective ${result.summary.blockers === 1 ? "inconsistency" : "inconsistencies"} must be resolved before submission.`,
+    "",
+    "Optional: share a coarse scan outcome in a public GitHub issue. Nothing is sent automatically.",
+    "The issue will be public and tied to your GitHub account:",
+    "https://github.com/sora-volare0319/scopeparity/issues/new?template=scan-feedback.yml",
+    "Do not include source, manifest values, report contents, app URLs, credentials, or personal data.",
     ""
   ].join("\n");
 }
@@ -26630,7 +26635,7 @@ async function runScanCommand(rootInput, options) {
 }
 
 // src/cli.ts
-var VERSION = "0.1.0";
+var VERSION = "0.1.1";
 async function captureFailure(operation, io) {
   try {
     return await operation();

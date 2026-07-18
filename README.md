@@ -1,8 +1,9 @@
-# ScopeParity GitHub Action and CLI
+# Catch Google OAuth scope drift before verification or re-verification
 
-ScopeParity compares literal Google OAuth scopes in Git-tracked source with a secret-free launch manifest and the evidence planned for each scope. The scan runs in the checked-out repository, requires no Google credentials, and returns a failing check for objective blockers or invalid inputs.
+ScopeParity compares literal Google OAuth scopes in Git-tracked source with the secret-free submission manifest and demo evidence you plan to use. Run it before initial verification or re-verification to catch deterministic mismatches without Google credentials or source uploads.
 
-Google's Workspace IDE extension provides OAuth scope linting while you write code. ScopeParity complements it by checking parity across source, intended submission values, and demo-video evidence: https://developers.google.com/workspace/guides/developer-tools
+- **GitHub Action:** pin `sora-volare0319/scopeparity-cli@v1.0.0` in pull requests.
+- **Local CLI:** pin `github:sora-volare0319/scopeparity-cli#v0.1.4` for local scans.
 
 ## Guard pull requests
 
@@ -31,6 +32,8 @@ jobs:
 The action uses the bundled CLI in this repository. It installs no project dependencies, sends no source or manifest data to ScopeParity, and does not opt into public URL checks. When objective blockers are found, the HTML report is written before the check returns its non-zero exit code.
 
 For a monorepo, set `root` to the repository-relative project directory. `manifest` remains relative to that scan root; `report` is relative to the GitHub workspace.
+
+Google's Workspace IDE extension provides OAuth scope linting while you write code. ScopeParity complements it by checking parity across source, intended submission values, and demo-video evidence: https://developers.google.com/workspace/guides/developer-tools
 
 ## Keep the report (opt in)
 

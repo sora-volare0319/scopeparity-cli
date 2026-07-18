@@ -32,6 +32,26 @@ The action uses the bundled CLI in this repository. It installs no project depen
 
 For a monorepo, set `root` to the repository-relative project directory. `manifest` remains relative to that scan root; `report` is relative to the GitHub workspace.
 
+## Keep the report (opt in)
+
+Files created during a GitHub Actions job are not retained automatically. To keep the report in GitHub Actions storage, add this step after ScopeParity:
+
+```yaml
+      - name: Upload ScopeParity report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: scopeparity-report
+          path: scopeparity-report.html
+          if-no-files-found: warn
+```
+
+This upload is optional and goes to the repository's GitHub Actions storage, not to ScopeParity.
+
+## From parity check to launch evidence
+
+The Action and every diagnostic finding stay free. When a project needs a versioned scope-evidence matrix, recording plan, provenance record, and repeatable evidence workflow, [preview the Launch Evidence Workspace](https://scopeparity.vercel.app/?utm_source=github&utm_medium=action-readme&utm_campaign=action-v1#pricing).
+
 ## Run locally
 
 Create the secret-free manifest once:

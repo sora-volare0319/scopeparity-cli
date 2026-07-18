@@ -1,0 +1,40 @@
+name: ScopeParity OAuth Evidence Guard
+description: Fail pull requests when Google OAuth scopes drift from a secret-free launch evidence manifest.
+author: ScopeParity
+
+inputs:
+  root:
+    description: Repository-relative directory to scan.
+    required: false
+    default: "."
+  manifest:
+    description: Manifest path relative to the scan root.
+    required: false
+    default: oauth-evidence.yaml
+  report:
+    description: HTML report path relative to the GitHub workspace.
+    required: false
+    default: scopeparity-report.html
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Node.js 22
+      uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      with:
+        node-version: "22"
+
+    - name: Check OAuth scope parity
+      shell: bash
+      env:
+        SCOPEPARITY_ROOT: ${{ inputs.root }}
+        SCOPEPARITY_MANIFEST: ${{ inputs.manifest }}
+        SCOPEPARITY_REPORT: ${{ inputs.report }}
+      run: |
+        node "$GITHUB_ACTION_PATH/dist/index.js" scan "$GITHUB_WORKSPACE/$SCOPEPARITY_ROOT" \
+          --manifest "$SCOPEPARITY_MANIFEST" \
+          --report "$GITHUB_WORKSPACE/$SCOPEPARITY_REPORT"
+
+branding:
+  icon: shield
+  color: blue

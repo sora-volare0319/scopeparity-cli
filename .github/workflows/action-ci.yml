@@ -1,0 +1,43 @@
+name: Action CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out the action
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Accept an aligned fixture
+        uses: ./
+        with:
+          root: .github/fixtures/aligned
+          report: aligned-report.html
+
+      - name: Verify the aligned report
+        run: test -s "$GITHUB_WORKSPACE/aligned-report.html"
+
+      - name: Reject a drift fixture
+        id: drift
+        continue-on-error: true
+        uses: ./
+        with:
+          root: .github/fixtures/drift
+          report: drift-report.html
+
+      - name: Verify the drift failure and report
+        if: always()
+        env:
+          DRIFT_OUTCOME: ${{ steps.drift.outcome }}
+        run: |
+          test "$DRIFT_OUTCOME" = "failure"
+          test -s "$GITHUB_WORKSPACE/drift-report.html"
